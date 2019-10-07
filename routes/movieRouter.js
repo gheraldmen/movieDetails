@@ -25,15 +25,19 @@ movieRouter.get("/movieList", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
-
 movieRouter.get("/movie/:_id", (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
   .findOne({_id: ObjectId(req.params._id)})
   .then((movies) => {
+    var poster = movies.poster
+    var posterLink = poster.split("/")
+    var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+    var image = image
     var movieDetails = {
        title: movies.title,
-       plot: movies.plot
+       plot: movies.plot,
+       poster: image
     }
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
