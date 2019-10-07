@@ -10,9 +10,12 @@ const movieRouter = express.Router();
 movieRouter.use(bodyParser.json());
 
 movieRouter.get("/movieList", (req, res, next)=>{
+  const resPerPage = 10; // results per page
+  const page = req.query.page || 1; // Page 
   mongoose.connection.db
   .collection("movieDetails")
-  .find({})
+  .find({}).skip((resPerPage * page) - resPerPage)
+  .limit(resPerPage)
   .toArray()
   .then((movies) => {
     res.statusCode = 200;
@@ -39,6 +42,8 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
+
+
 movieRouter.get("/title", (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
@@ -51,7 +56,6 @@ movieRouter.get("/title", (req, res, next)=>{
 }, (err) => next(err))
 .catch((err) => next(err)); 
 });
-
 
 
 movieRouter.get("/movie/:_id/countries", (req, res, next)=>{
@@ -103,7 +107,7 @@ movieRouter.get("/searchBy", (req, res, next)=>{
  if(req.query.title && req.query.actor && req.query.plot){
     mongoose.connection.db
     .collection("movieDetails")
-    .find(({actors: req.query.actor, title: req.query.title, plot: new RegExp('^' +req.query.plot.toLowerCase(), 'ig')}),{projection: {title: 1, _id:0, actors:1, plot:1 }})
+    .find(({actors: new RegExp(req.query.actor.toLowerCase()), title: new RegExp(req.query.title.toLowerCase()), plot: new RegExp(req.query.plot.toLowerCase(), 'ig')}),{projection: {title: 1, _id:0, actors:1, plot:1 }})
     .toArray()
     .then((movies) => {
       console.log("all 3 parts")
@@ -115,7 +119,7 @@ movieRouter.get("/searchBy", (req, res, next)=>{
     else if((req.query.actor)){
       mongoose.connection.db
       .collection("movieDetails")
-      .find({actors: req.query.actor})
+      .find({actors: new RegExp(req.query.actor.toLowerCase(), 'ig')})
       .toArray()
       .then((movies) => {
         console.log("actor part")
@@ -127,21 +131,15 @@ movieRouter.get("/searchBy", (req, res, next)=>{
     else if(req.query.plot){
     mongoose.connection.db
       .collection("movieDetails")
-      .findOne({plot: req.query.plot})
-      // .toArray()
+      .find({plot: new RegExp(req.query.plot.toLowerCase(), 'ig')})
+      .toArray()
       .then((movies) => {
         console.log("plot part")
-        var movieDetails ={
-          title: movies.title,
-          plot: movies.plot,
-          actors: movies.actors
-        }
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json(movieDetails);
+        res.json(movies);
     }, (err) => next(err));
   }
-  
   else if(req.query.title){
     mongoose.connection.db
     .collection("movieDetails")
@@ -204,7 +202,6 @@ movieRouter.delete("/delete/:_id", (req, res, next)=>{
   }, (err) => next(err))
   .catch((err) => next(err)); 
   });
-
 
 
 
