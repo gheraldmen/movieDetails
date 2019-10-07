@@ -39,42 +39,10 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
-
-movieRouter.get("/movie/:_id/countries", (req, res, next)=>{
-mongoose.connection.db
-.collection("movieDetails")
-.findOne({_id: ObjectId(req.params._id)})
-.then((movies) => {
-  var movieDetails = {
-     countries: movies.countries
-  }
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.json(movieDetails);
-}, (err) => next(err))
-.catch((err) => next(err)); 
-});
-
-movieRouter.get("/movie/:_id/writers", (req, res, next)=>{
-mongoose.connection.db
-.collection("movieDetails")
-.findOne({_id: ObjectId(req.params._id)})
-.then((movies) => {
-  var movieDetails = {
-     countries: movies.writers
-  }
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.json(movieDetails);
-}, (err) => next(err))
-.catch((err) => next(err)); 
-});
-
-movieRouter.get("/writers", (req, res, next)=>{
-  console.log(req.query.name)
+movieRouter.get("/title", (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
-  .find({writers: req.query.name})
+  .find({title: new RegExp(req.query.title.toLowerCase(), 'ig')})
   .toArray()
   .then((movies) => {
     res.statusCode = 200;
@@ -84,11 +52,58 @@ movieRouter.get("/writers", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
+
+
+movieRouter.get("/movie/:_id/countries", (req, res, next)=>{
+mongoose.connection.db
+    .collection("movieDetails")
+    .findOne({_id: ObjectId(req.params._id)})
+    .then((movies) => {
+         var movieDetails = {
+     countries: movies.countries
+     }
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(movieDetails);
+      }, (err) => next(err))
+      .catch((err) => next(err)); 
+});
+
+movieRouter.get("/movie/:_id/writers", (req, res, next)=>{
+mongoose.connection.db
+.collection("movieDetails")
+.findOne({_id: ObjectId(req.params._id)})
+.then((movies) => {
+  var movieDetails = {
+     writers: movies.writers
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.json(movieDetails);
+}, (err) => next(err))
+.catch((err) => next(err)); 
+});
+
+
+ movieRouter.get("/writers", (req, res, next)=>{
+  mongoose.connection.db
+  .collection("movieDetails")
+  .find({writers: new RegExp('^' +req.query.name.toLowerCase(), 'ig')}, {projection: {title: 1, _id:0 }})
+  .toArray()
+  .then((movies) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.json(movies);
+}, (err) => next(err))
+.catch((err) => next(err)); 
+});
+
+
 movieRouter.get("/searchBy", (req, res, next)=>{
  if(req.query.title && req.query.actor && req.query.plot){
     mongoose.connection.db
     .collection("movieDetails")
-    .find(({actors: req.query.actor, title: req.query.title, plot: req.query.plot}))
+    .find(({actors: req.query.actor, title: req.query.title, plot: new RegExp('^' +req.query.plot.toLowerCase(), 'ig')}),{projection: {title: 1, _id:0, actors:1, plot:1 }})
     .toArray()
     .then((movies) => {
       console.log("all 3 parts")
@@ -112,19 +127,25 @@ movieRouter.get("/searchBy", (req, res, next)=>{
     else if(req.query.plot){
     mongoose.connection.db
       .collection("movieDetails")
-      .find({plot: req.query.plot})
-      .toArray()
+      .findOne({plot: req.query.plot})
+      // .toArray()
       .then((movies) => {
         console.log("plot part")
+        var movieDetails ={
+          title: movies.title,
+          plot: movies.plot,
+          actors: movies.actors
+        }
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json(movies);
+        res.json(movieDetails);
     }, (err) => next(err));
   }
+  
   else if(req.query.title){
     mongoose.connection.db
     .collection("movieDetails")
-    .find({title: req.query.title})
+    .find({title: new RegExp(req.query.title.toLowerCase(), 'ig')})
     .toArray()
     .then((movies) => {
       console.log("title part")
