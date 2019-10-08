@@ -3,7 +3,9 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const authenticate = require('../authenticate')
 var ObjectId = require('mongodb').ObjectId; 
+var multer = require('multer');
 
+var upload = multer();
 
 const movieRouter = express.Router();
 
@@ -59,14 +61,36 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
     var image = image
     var movieDetails = {
        title: movies.title,
+       year: movies.year,
+       rated: movies.rated,
+       runtime: movies.runtime,
+       countries: movies.countries,
+       genres: movies.genres,
+       director: movies.director,
+       writers: movies.writers,
+       actors: movies.actors,
        plot: movies.plot,
        poster: image,
-       actors: arrayItem.actors
+       imdb: movies.imdb,
+       awards: movies.awards,
+       type: movies.type
     }}else{
       var movieDetails = {
         _id: movies._id,
         title: movies.title,
-        actors: arrayItem.actors     
+       year: movies.year,
+       rated: movies.rated,
+       runtime: movies.runtime,
+       countries: movies.countries,
+       genres: movies.genres,
+       director: movies.director,
+       writers: movies.writers,
+       actors: movies.actors,
+       plot: movies.plot,
+       poster: image,
+       imdb: movies.imdb,
+       awards: movies.awards,
+       type: movies.type    
      }
     }
     res.statusCode = 200;
@@ -337,34 +361,26 @@ movieRouter.get("/searchBy", (req, res, next)=>{
 }
 });
 
-
-movieRouter.post("/update/:_id" , (req, res, next) => {
+movieRouter.post('/update/:_id', upload.none(), (req,res,next) => {
   mongoose.connection.db
   .collection("movieDetails")
-  .findOne({_id: ObjectId(req.params._id)})
-   .then((movies) => {
-       if(movies!= null) {
-          movies.actors.push(req.body);
-          // movies.markModified(movies.actors)
-          movies.save()
-           .then((movies) => {
-            mongoose.connection.db
-              .collection("movieDetails")
-              .findOne({_id: ObjectId(movies._id)})
-               .then((movies) => {
-                   res.statusCode = 200;
-                   res.setHeader('Content-Type', 'application/json');
-                   res.json(movies);
-               })            
-           }, (err) => next(err));
-       }
-       else {
-           err = new Error('Thread ' + req.params._id + ' not found');
-           err.status = 404;
-           return next(err);
-       }
-   }, (err) => next(err))
-   .catch((err) => next(err));
+  .findOneAndUpdate({_id : new ObjectId(req.params._id)}, {  
+      $set: req.body
+  },{new: true},(err)=>{
+    if(err){
+      res.status(404)
+      res.send({
+        status: "Unsuccessful"
+      })
+      return
+    }else{
+      res.status(200)
+      res.send({
+          status: "Successful"
+        })
+        return
+    }
+    })
 });
 
 
@@ -372,11 +388,10 @@ movieRouter.delete("/delete/:_id", (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
   .findOneAndDelete({_id: ObjectId(req.params._id)})
-  // .toArray()
   .then((movies) => {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.json(movies);
+    res.send("successful")
   }, (err) => next(err))
   .catch((err) => next(err)); 
   });
