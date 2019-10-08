@@ -11,16 +11,38 @@ movieRouter.use(bodyParser.json());
 
 movieRouter.get("/movieList", (req, res, next)=>{
   const resPerPage = 10; // results per page
-  const page = req.query.page || 1; // Page 
+  const page = req.query.page || 1 // Page 
   mongoose.connection.db
   .collection("movieDetails")
   .find({}).skip((resPerPage * page) - resPerPage)
   .limit(resPerPage)
   .toArray()
   .then((movies) => {
+  var newArray = new Array()
+  movies.forEach(function(arrayItem){
+    if( arrayItem.poster !=null){
+      var poster = arrayItem.poster
+      var posterLink = poster.split("/")
+      var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+      var image = image
+      var movieDetails = {
+         _id: arrayItem._id,
+         title: arrayItem.title,
+         poster: image,
+         actors: arrayItem.actors
+      }
+      newArray.push(movieDetails)
+    }else{
+      var movieDetails = {
+        _id: arrayItem._id,
+        title: arrayItem.title, 
+        actors: arrayItem.actors    
+     }
+     newArray.push(movieDetails)  
+    }})
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.json(movies);
+    res.json(newArray);
 }, (err) => next(err))
 .catch((err) => next(err)); 
 });
@@ -30,6 +52,7 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
   .collection("movieDetails")
   .findOne({_id: ObjectId(req.params._id)})
   .then((movies) => {
+    if( movies.poster !=null){
     var poster = movies.poster
     var posterLink = poster.split("/")
     var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
@@ -37,7 +60,14 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
     var movieDetails = {
        title: movies.title,
        plot: movies.plot,
-       poster: image
+       poster: image,
+       actors: arrayItem.actors
+    }}else{
+      var movieDetails = {
+        _id: movies._id,
+        title: movies.title,
+        actors: arrayItem.actors     
+     }
     }
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
@@ -46,19 +76,46 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
-
-
 movieRouter.get("/title", (req, res, next)=>{
-  mongoose.connection.db
-  .collection("movieDetails")
-  .find({title: new RegExp(req.query.title.toLowerCase(), 'ig')})
-  .toArray()
-  .then((movies) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.json(movies);
-}, (err) => next(err))
-.catch((err) => next(err)); 
+  const resPerPage = 1; // results per page
+  const page = req.query.page || 1 // Page 
+  if(req.query.title || req.query.page){
+    mongoose.connection.db
+    .collection("movieDetails")
+    .find(({title: new RegExp(req.query.title.toLowerCase(),'ig')})).skip((resPerPage*page)-resPerPage)
+    .limit(resPerPage)
+    .toArray()
+    .then((movies) => {
+      var newArray = new Array()
+      movies.forEach(function(arrayItem){
+        if( arrayItem.poster !=null){
+          var poster = arrayItem.poster
+          var posterLink = poster.split("/")
+          var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+          var image = image
+          var movieDetails = {
+             _id: arrayItem._id,
+             title: arrayItem.title,
+             poster: image,
+             actors: arrayItem.actors
+          }
+          newArray.push(movieDetails)
+        }else{
+          var movieDetails = {
+            _id: arrayItem._id,
+            title: arrayItem.title,
+            actors: arrayItem.actors     
+         }
+         newArray.push(movieDetails)  
+        }})
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      res.json(newArray);
+  }, (err) => next(err)); 
+ }else{
+  err = new Error(' not found');
+  err.status = 404;
+}
 });
 
 
@@ -68,8 +125,8 @@ mongoose.connection.db
     .findOne({_id: ObjectId(req.params._id)})
     .then((movies) => {
          var movieDetails = {
-     countries: movies.countries
-     }
+            countries: movies.countries
+        }
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.json(movieDetails);
@@ -96,72 +153,189 @@ mongoose.connection.db
  movieRouter.get("/writers", (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
-  .find({writers: new RegExp('^' +req.query.name.toLowerCase(), 'ig')}, {projection: {title: 1, _id:0 }})
+  .find({writers: new RegExp('^' +req.query.name.toLowerCase(), 'ig')})
   .toArray()
   .then((movies) => {
+    var newArray = new Array()
+    movies.forEach(function(arrayItem){
+      if( arrayItem.poster !=null){
+        var poster = arrayItem.poster
+        var posterLink = poster.split("/")
+        var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+        var image = image
+        var movieDetails = {
+           _id: arrayItem._id,
+           title: arrayItem.title,
+           poster: image,
+           actors: arrayItem.actors
+        }
+        newArray.push(movieDetails)
+      }else{
+        var movieDetails = {
+          _id: arrayItem._id,
+          title: arrayItem.title,
+          actors: arrayItem.actors     
+       }
+       newArray.push(movieDetails)  
+      }})
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.json(movies);
+    res.json(newArray);
 }, (err) => next(err))
 .catch((err) => next(err)); 
 });
 
 
 movieRouter.get("/searchBy", (req, res, next)=>{
- if(req.query.title && req.query.actor && req.query.plot){
+  const resPerPage = 10; // results per page
+  const page = req.query.page || 1 // Page 
+ if(req.query.all || req.query.page){
     mongoose.connection.db
     .collection("movieDetails")
-    .find(({actors: new RegExp(req.query.actor.toLowerCase()), title: new RegExp(req.query.title.toLowerCase()), plot: new RegExp(req.query.plot.toLowerCase(), 'ig')}),{projection: {title: 1, _id:0, actors:1, plot:1 }})
+    .find({$or: [{actors: new RegExp(req.query.all.toLowerCase(), 'ig')}, 
+                  {title: new RegExp(req.query.all.toLowerCase(), 'ig')},
+                 {plot: new RegExp(req.query.all.toLowerCase(), 'ig')}]})
+    .skip((resPerPage*page)-resPerPage)
+    .limit(resPerPage)
     .toArray()
     .then((movies) => {
+      var newArray = new Array()
+      movies.forEach(function(arrayItem){
+        if( arrayItem.poster !=null){
+          var poster = arrayItem.poster
+          var posterLink = poster.split("/")
+          var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+          var image = image
+          var movieDetails = {
+             _id: arrayItem._id,
+             title: arrayItem.title,
+             poster: image,
+             actors: arrayItem.actors,
+             plot: arrayItem.plot
+          }
+          newArray.push(movieDetails)
+        }else{
+          var movieDetails = {
+            _id: arrayItem._id,
+            title: arrayItem.title, 
+            actors: arrayItem.actors ,
+            plot: arrayItem.plot   
+         }
+         newArray.push(movieDetails)  
+        }})
       console.log("all 3 parts")
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
-      res.json(movies);
+      res.json(newArray);
   }, (err) => next(err));
  }
-    else if((req.query.actor)){
+   else if(req.query.actor || req.query.page){
+    mongoose.connection.db
+      .collection("movieDetails")
+      .find({actors: new RegExp(req.query.actor.toLowerCase(), 'ig')}).skip((resPerPage*page)-resPerPage)
+      .limit(resPerPage)
+      .toArray()
+      .then((movies) => {
+        var newArray = new Array()
+        movies.forEach(function(arrayItem){
+          if( arrayItem.poster !=null){
+            var poster = arrayItem.poster
+            var posterLink = poster.split("/")
+            var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+            var image = image
+            var movieDetails = {
+               _id: arrayItem._id,
+               title: arrayItem.title,
+               poster: image,
+               actors: arrayItem.actors
+            }
+            newArray.push(movieDetails)
+          }else{
+            var movieDetails = {
+              _id: arrayItem._id,
+              title: arrayItem.title, 
+              actors: arrayItem.actors    
+           }
+           newArray.push(movieDetails)  
+          }})
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(newArray);
+    }, (err) => next(err));
+  }
+    else if(req.query.plot || req.query.page){
       mongoose.connection.db
       .collection("movieDetails")
-      .find({actors: new RegExp(req.query.actor.toLowerCase(), 'ig')})
+      .find({plot: new RegExp(req.query.plot.toLowerCase(), 'ig')}).skip((resPerPage*page)-resPerPage)
+      .limit(resPerPage)
       .toArray()
       .then((movies) => {
-        console.log("actor part")
+        var newArray = new Array()
+        movies.forEach(function(arrayItem){
+          if( arrayItem.poster !=null){
+            var poster = arrayItem.poster
+            var posterLink = poster.split("/")
+            var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+            var image = image
+            var movieDetails = {
+               _id: arrayItem._id,
+               title: arrayItem.title,
+               poster: image,
+               actors: arrayItem.actors,
+               plot: arrayItem.plot
+            }
+            newArray.push(movieDetails)
+          }else{
+            var movieDetails = {
+              _id: arrayItem._id,
+              title: arrayItem.title, 
+              plot: arrayItem.plot    
+           }
+           newArray.push(movieDetails)  
+          }})
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json(movies);
+        res.json(newArray);
     }, (err) => next(err));
   }
-    else if(req.query.plot){
-    mongoose.connection.db
-      .collection("movieDetails")
-      .find({plot: new RegExp(req.query.plot.toLowerCase(), 'ig')})
-      .toArray()
-      .then((movies) => {
-        console.log("plot part")
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.json(movies);
-    }, (err) => next(err));
-  }
-  else if(req.query.title){
+  else if(req.query.title || req.query.page){
     mongoose.connection.db
     .collection("movieDetails")
-    .find({title: new RegExp(req.query.title.toLowerCase(), 'ig')})
+    .find(({title: new RegExp(req.query.title.toLowerCase(),'ig')})).skip((resPerPage*page)-resPerPage)
+    .limit(resPerPage)
     .toArray()
     .then((movies) => {
-      console.log("title part")
+      var newArray = new Array()
+      movies.forEach(function(arrayItem){
+        if( arrayItem.poster !=null){
+          var poster = arrayItem.poster
+          var posterLink = poster.split("/")
+          var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+          var image = image
+          var movieDetails = {
+             _id: arrayItem._id,
+             title: arrayItem.title,
+             poster: image,
+             actors: arrayItem.actors
+          }
+          newArray.push(movieDetails)
+        }else{
+          var movieDetails = {
+            _id: arrayItem._id,
+            title: arrayItem.title,
+            actors: arrayItem.actors     
+         }
+         newArray.push(movieDetails)  
+        }})
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
-      res.json(movies);
-  }, (err) => next(err));
+      res.json(newArray);
+  }, (err) => next(err)); 
+ }else{
+  err = new Error(' not found');
+  err.status = 404;
 }
-  else {
-    err = new Error(' not found');
-    err.status = 404;
-  }
 });
-
 
 
 movieRouter.post("/update/:_id" , (req, res, next) => {
@@ -206,6 +380,8 @@ movieRouter.delete("/delete/:_id", (req, res, next)=>{
   }, (err) => next(err))
   .catch((err) => next(err)); 
   });
+
+
 
 
 
