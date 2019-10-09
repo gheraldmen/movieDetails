@@ -204,6 +204,28 @@ movieRouter.get("/searchBy", (req, res, next)=>{
 }
 });
 
+movieRouter.get("/genre", (req, res, next)=>{
+  const resPerPage = 2; // results per page
+  const page = req.query.page || 1 // Page 
+  mongoose.connection.db               
+  .collection("movieDetails")
+  .find(({genres: new RegExp(req.query.genre.toLowerCase(),'ig')}), {projection: {_id:0, title:1, genres:1, poster:1, actors:1, plot:1}})
+  .skip((resPerPage * page) - resPerPage)
+  .limit(resPerPage)
+  .toArray()
+  .then((movies) => {
+    movies.forEach((arrayItem)=>{
+      if(arrayItem.poster !=null){
+        var poster = arrayItem.poster
+        var posterLink = poster.split("/")
+        var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
+       arrayItem.poster = image;
+    }})
+      res.json(movies);
+  }, (err) => next(err))
+  .catch((err) => next(err)); 
+});
+
 movieRouter.post('/update/:_id', upload.none(), (req,res,next) => {
   mongoose.connection.db
   .collection("movieDetails")
