@@ -5,6 +5,7 @@ const authenticate = require('../authenticate')
 var ObjectId = require('mongodb').ObjectId; 
 var multer = require('multer');
 
+
 var upload = multer();
 
 const movieRouter = express.Router();
@@ -12,12 +13,13 @@ const movieRouter = express.Router();
 movieRouter.use(bodyParser.json());
 
 
-movieRouter.get("/movieList", (req, res, next)=>{
+movieRouter.get("/movieList", authenticate.jwtCheck, (req, res, next)=>{
   const resPerPage = 10; // results per page
   const page = req.query.page || 1 // Page 
   mongoose.connection.db
   .collection("movieDetails")
-  .find({},  { projection: { _id: 0, title:1, actors: 1, poster: 1, plot: 1 }})
+  .find({},  { projection: { _id: 1, title:1, actors: 1, imdb:1, poster: 1, plot: 1 }})
+  .sort({"imdb.rating":-1})
   .skip((resPerPage * page) - resPerPage)
   .limit(resPerPage)
   .toArray()
@@ -29,15 +31,16 @@ movieRouter.get("/movieList", (req, res, next)=>{
       var image = ("https://" + posterLink[2] + '/' + posterLink[3]+ '/' + posterLink[4] + '/' + posterLink[5])
       arrayItem.poster = image
     }})
+    res.setHeader("Content-Type", "application/json");
     res.json(movies);
   }, (err) => next(err))
 .catch((err) => next(err)); 
 });
 
-movieRouter.get("/movie/:_id", (req, res, next)=>{
+movieRouter.get("/movie/:_id", authenticate.jwtCheck, (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
-  .findOne({_id: ObjectId(req.params._id)})
+  .findOne({_id: new ObjectId(req.params._id)})
   .then((movies) => {
     if(movies.poster !=null){
       var poster = movies.poster
@@ -50,7 +53,7 @@ movieRouter.get("/movie/:_id", (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
-movieRouter.get("/title", (req, res, next)=>{
+movieRouter.get("/title", authenticate.jwtCheck, (req, res, next)=>{
   const resPerPage = 1; // results per page
   const page = req.query.page || 1 // Page 
     mongoose.connection.db
@@ -73,10 +76,10 @@ movieRouter.get("/title", (req, res, next)=>{
 });
 
 
-movieRouter.get("/movie/:_id/countries", (req, res, next)=>{
+movieRouter.get("/movie/:_id/countries", authenticate.jwtCheck,  (req, res, next)=>{
 mongoose.connection.db
     .collection("movieDetails")
-    .findOne({_id: ObjectId(req.params._id)},{ projection: { _id: 0, countries:1 }})
+    .findOne({_id: ObjectId(req.params._id)},{ projection: { _id: 0, countries:1 }}).countDocuments()
     .then((movies) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -85,7 +88,7 @@ mongoose.connection.db
       .catch((err) => next(err)); 
 });
 
-movieRouter.get("/movie/:_id/writers", (req, res, next)=>{
+movieRouter.get("/movie/:_id/writers", authenticate.jwtCheck, (req, res, next)=>{
 mongoose.connection.db
 .collection("movieDetails")
 .findOne({_id: ObjectId(req.params._id)},{ projection: { _id: 0, writers:1 }})
@@ -98,7 +101,7 @@ mongoose.connection.db
 });
 
 
- movieRouter.get("/writers", (req, res, next)=>{
+ movieRouter.get("/writers", authenticate.jwtCheck, (req, res, next)=>{
   const resPerPage = 1; // results per page
   const page = req.query.page || 1 // Page 
   mongoose.connection.db               
@@ -121,7 +124,7 @@ mongoose.connection.db
 });
 
 
-movieRouter.get("/searchBy", (req, res, next)=>{
+movieRouter.get("/searchBy", authenticate.jwtCheck,  (req, res, next)=>{
   const resPerPage = 1; // results per page
   const page = req.query.page || 1 // Page 
  if(req.query.all && req.query.page){
@@ -204,12 +207,13 @@ movieRouter.get("/searchBy", (req, res, next)=>{
 }
 });
 
-movieRouter.get("/genre", (req, res, next)=>{
-  const resPerPage = 2; // results per page
+movieRouter.get("/genre", authenticate.jwtCheck,  (req, res, next)=>{
+  const resPerPage = 10; // results per page
   const page = req.query.page || 1 // Page 
   mongoose.connection.db               
   .collection("movieDetails")
-  .find(({genres: new RegExp(req.query.genre.toLowerCase(),'ig')}), {projection: {_id:0, title:1, genres:1, poster:1, actors:1, plot:1}})
+  .find(({genres: new RegExp(req.query.genre.toLowerCase(),'ig')}), {projection: {_id:0, title:1, imdb:1, genres:1, poster:1, actors:1, plot:1}})
+  .sort({"imdb.rating":-1})
   .skip((resPerPage * page) - resPerPage)
   .limit(resPerPage)
   .toArray()
@@ -226,11 +230,12 @@ movieRouter.get("/genre", (req, res, next)=>{
   .catch((err) => next(err)); 
 });
 
-movieRouter.post('/update/:_id', upload.none(), (req,res,next) => {
+
+movieRouter.post('/update/:_id', authenticate.jwtCheck,  upload.none(), (req,res,next) => {
   mongoose.connection.db
   .collection("movieDetails")
   .findOneAndUpdate({_id : ObjectId(req.params._id)}, { 
-      $addToSet: req.body
+
   },{new: true},(err)=>{
     if(err){
       res.status(404)
@@ -249,7 +254,7 @@ movieRouter.post('/update/:_id', upload.none(), (req,res,next) => {
 });
 
 
-movieRouter.delete("/delete/:_id", (req, res, next)=>{
+movieRouter.delete("/delete/:_id", authenticate.jwtCheck,  (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
   .findOneAndDelete({_id: ObjectId(req.params._id)},(err)=>{
@@ -271,6 +276,4 @@ movieRouter.delete("/delete/:_id", (req, res, next)=>{
 
 
 
-
-
-  module.exports = movieRouter;
+module.exports = movieRouter;
