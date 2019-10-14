@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const authenticate = require('../authenticate')
 var ObjectId = require('mongodb').ObjectId; 
 var multer = require('multer');
-const cors = require('./cors');
 
 var upload = multer();
 
@@ -49,7 +48,7 @@ movieRouter.get("/movieList", (req, res)=>{
 movieRouter.get("/movie/:_id",  (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
-  .findOne({_id: new ObjectId(req.params._id)},{projection: {_id:0, title:1, poster:1, actors:1, plot:1}}) 
+  .findOne({_id: new ObjectId(req.params._id)},{projection: {_id:1, title:1, poster:1, actors:1, plot:1}}) 
   .then((movies) => {
     if(movies.poster !=null){
       var poster = movies.poster
@@ -62,7 +61,7 @@ movieRouter.get("/movie/:_id",  (req, res, next)=>{
 .catch((err) => next(err)); 
 });
 
-movieRouter.get("/title", cors.cors, authenticate.jwtCheck,(req, res, next)=>{
+movieRouter.get("/title",  authenticate.jwtCheck,(req, res, next)=>{
   const resPerPage = 10; // results per page
   const page = parseInt(req.query.page) || 1 // Page 
     mongoose.connection.db
@@ -95,7 +94,7 @@ movieRouter.get("/title", cors.cors, authenticate.jwtCheck,(req, res, next)=>{
 });
   
 
-movieRouter.get("/movie/:_id/countries", cors.cors, authenticate.jwtCheck,  (req, res, next)=>{
+movieRouter.get("/movie/:_id/countries",  authenticate.jwtCheck,  (req, res, next)=>{
 mongoose.connection.db
     .collection("movieDetails")
     .findOne({_id: ObjectId(req.params._id)},{ projection: { _id: 0, countries:1 }})
@@ -107,7 +106,7 @@ mongoose.connection.db
       .catch((err) => next(err)); 
 });
 
-movieRouter.get("/movie/:_id/writers",cors.cors, authenticate.jwtCheck, (req, res, next)=>{
+movieRouter.get("/movie/:_id/writers", authenticate.jwtCheck, (req, res, next)=>{
 mongoose.connection.db
 .collection("movieDetails")
 .findOne({_id: ObjectId(req.params._id)},{ projection: { _id: 0, writers:1 }})
@@ -120,7 +119,7 @@ mongoose.connection.db
 });
 
 
- movieRouter.get("/writers", cors.cors, authenticate.jwtCheck, (req, res, next)=>{
+ movieRouter.get("/writers",  authenticate.jwtCheck, (req, res, next)=>{
   const resPerPage = 10; // results per page
   const page = parseInt(req.query.page )|| 1 // Page 
   mongoose.connection.db               
@@ -152,7 +151,7 @@ mongoose.connection.db
     .catch((err) => next(err)); 
 });
 
-movieRouter.get("/searchBy", cors.cors,  (req, res, next)=>{
+movieRouter.get("/searchBy",  (req, res, next)=>{
   const resPerPage = 10; // results per page
   const page = parseInt(req.query.page) || 1 // Page 
  if(req.query.all){
@@ -310,9 +309,8 @@ movieRouter.get("/genre", authenticate.jwtCheck, (req, res, next)=>{
 });
 
 
-movieRouter.post('/update/:_id', cors.cors,  upload.none(), (req,res,next) => {
+movieRouter.post('/update/:_id', authenticate.jwtCheck,  upload.none(), (req,res,next) => {
   if(req.body.actors){
-
   mongoose.connection.db
   .collection("movieDetails")
   .findOne({_id : ObjectId(req.params._id)})
@@ -368,7 +366,7 @@ movieRouter.post('/update/:_id', cors.cors,  upload.none(), (req,res,next) => {
 });
 
 
-movieRouter.delete("/delete/:_id", cors.cors, authenticate.jwtCheck,  (req, res, next)=>{
+movieRouter.delete("/delete/:_id",  authenticate.jwtCheck,  (req, res, next)=>{
   mongoose.connection.db
   .collection("movieDetails")
   .findOneAndDelete({_id: ObjectId(req.params._id)},(err)=>{
